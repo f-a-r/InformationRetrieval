@@ -1,0 +1,90 @@
+=======================
+List of Files
+=======================
+
+relevance_feedback.py
+transcript.txt
+stopwords.txt
+README.rtf
+Makefile
+
+=======================
+How to run:
+=======================
+
+(using commend line):
+In the terminal type: python relevance_feedback.py <YourBingAccountKey> <precision> <queries>
+<queries> is your query, a list of words separated by white spaces (e.g., snow leopard)
+<precision> is the target value for precision@10, a real between 0 and 1
+e.x. python relevance_feedback.py 1.0 snow leopard
+
+=======================
+Internal Design
+=======================
+
+1. There are 3 methods in relevance_feedback.py : “main()” method, “update_queries()” method and “create_dictionary()” method
+
+*** In our explanations, by document we mean each result returned by Bing.
+
+main():
+- In lines 144 to 147 the inputs from users (i.e.. precision target and query words) are being saved.
+- Stop words list is then created using the stopwords.txt file that we have. This list will then be passed to create_dictionary method and we would exclude the words in the results that appear in stopwords list.
+- We keep count of how many iterations are run until the desired precision is reached starting from iteration 0 which is the very first iteration using the user’s query words.
+- a lists for relevant documents (rel) and a list for non-relevant documents (nonrel) , and a dictionary for dfi (document frequency to keep count of how many documents contain a term) are then initialized. Another list called docs is also initialized. Each entry for this list is a dictionary itself called doc (created in create_dictionary method). Each dictionary entry in doc contains all terms and the term’s frequency.
+- The main iterations runs a in a while loop until the precision requested is reached. The program stops when precision achieved is greater than equal the precision requested by the user or if non of the results returned by Bing are relevant.
+- We took a few lines of code from the sample code provided by the professor for connecting to Bing using python.
+- results are printed then and user’s feedback for each result from 1 to 10 are saved in feedback list.
+- if precision is at 0 then the program stops.
+- if the precision is greater than or equal to the requested precision then the program also stops.
+- if the precision is less than the desired precision then the following methods are called and necessary arguments are passed to the relative method:
+	create_dictionary(queries, content[u'results'], feedbacks, stopwords, iteration, rel, nonRel, docs, dfi)
+           update_queries(queries, queries_bing, rel, nonRel, docs, idf)
+
+
+create_dictionary(queries, results, feedbacks, stopwords, iteration, rel, nonRel, docs, dfi):
+- First set of relevant and non relevant documents are separated using the feedback attribute
+- Then a dictionary is created for each document (and then each dictionary is added to docs list)
+- Each dictionary doc contains the terms that appear in the title and description of  that document as well as its frequency
+- After docs list is completed for this iteration, the set of words that are added to each relevant or non-relevant doc dictionary is not the same. So We take the queries vector (or list) which contains all the words that have been parsed so far as reference and unify the set of all words that appear in queries vector, in relevant document and non relevant documents vector. For those words that does not appear in a document of course its frequency is set to 0.
+- Then for all words that are saved in word_list we initialize its dfi
+- Then for each word in word_list, we check weather it appears in a document and we add 1 to dfi for each document (or bing result) it appears in. 
+- After updating dfi for each word in word_list, idf of each word is computed.
+- The method returns: rel, nonrel, queries(which is the query vector containing all words from the original query as well as all the words from the results returned by Bing), docs list (containing a dictionary for each results or called document here, each dictionary for each result contains terms as keys and their frequency as values), idf and dfi
+
+update_queries(queries, queries_bing, rel, nonRel, docs, idf):
+- This method performs the Rocchio algorithm. We used the default values for alpha (a) = 1 , beta (b) = 0.8 and gamma (c) = 0.1, which is suggested by the Wikipedia page of Rocchio: http://en.wikipedia.org/wiki/Rocchio_algorithm).
+- Query vector is normalized.
+- In performing the Rocchio’s formula, we first normalized term frequencies for each documents using its L2 norm. Then we added relevant document vectors to get sum)rel_vec. We performed the same step to get sum_nonrel_vec.
+- sum_rel_ven and sum_nonrel_vec vectors as well as the normalized query vector were multiplied by their associated coefficient a,b or c to get query_vec.
+- query_vec contains the new query vector.
+- The top two terms in words-list is chosen as the top two terms to be added to the query terms we have so far.
+- The queries list which contains all the words accumulated so far and queries bin which contains the old query terms as well as new query terms are returned to the main method to be used in the next iteration of the program.
+
+
+===========================
+Description of query-modification
+===========================
+
+- We used the Rocchio’s algorithm to add new terms to the user’s query to get the expected results with the desired precision.
+- The user would mark the initial results that were returned by Bing as relevant (1) or non-relevant (0).
+- # of relevant documents are counted to check the precision, if precision is at 0 or at or above the requested precision the program terminates otherwise using the user’s feedback 2 new terms are added to the existing query.
+- Each of the 10 results returned by Bing is considered as a document.
+- Unified vectors( i.e. se of words are the same) are created for each document and for the query.
+- Each vector contains the terms as well as the term’s frequency in the associated document.
+- All vectors (i.e., relevant documents, non-relevant documents and query vectors) are normalized using their L2 norm factor.
+- Then all terms in vectors are weighted by their associated idf values (which are computed accumulatedly based on all documents returned by each round).
+- Rocchios coefficients are multiplied by the old query, set of relevant vectors and set of non relevant vectors.
+- New query is computed using Rocchio.
+- Terms in new query are sorted based on their weights. The top two words that are not already in our search query string are added to it.
+- These new terms are added to the end of the previous query terms, so the user input queries have the highest orders, and then the two queries added by the first round follows; the queries selected by the second round are appended after them. 
+- They are submitted to Bing again and 10 new results are returned to the user.
+- Users judged the new results and same procedure is repeated until the requested precision is achieved.
+- In our examples we achieved the desired precision in the second round.
+
+==================================================================
+
+
+
+
+
+
